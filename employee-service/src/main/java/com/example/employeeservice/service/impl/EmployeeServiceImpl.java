@@ -7,6 +7,8 @@ import com.example.employeeservice.entity.Employee;
 import com.example.employeeservice.repository.EmployeeRepository;
 import com.example.employeeservice.service.APIClient;
 import com.example.employeeservice.service.EmployeeService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         employeeRepository.save(savedEmployee);
         return modelMapper.map(savedEmployee, EmployeeDto.class);
     }
-
+    //@CircuitBreaker(name = "${spring.application.name}",fallbackMethod = "getDefaultDepartment")
+    @Retry(name = "${spring.application.name}",fallbackMethod = "getDefaultDepartment")
     @Override
     public APIResponseDto getEmployeeById(long id) {
         Employee employee = employeeRepository.findById(id).get();
@@ -47,5 +50,20 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employees.stream().map((employee) -> modelMapper.map(employee, EmployeeDto.class))
                 .collect(Collectors.toList());
 
+    }
+
+    public APIResponseDto getDefaultDepartment(long id, Exception exception){
+        Employee employee = employeeRepository.findById(id).get();
+        //DepartmentDto departmentDto = apiClient.getDepartment(employee.getDepartmentCode());
+        DepartmentDto departmentDto = new DepartmentDto();
+        departmentDto.setDepartmentName("R&D Department");
+        departmentDto.setDepartmentCode("111");
+        departmentDto.setDepartmentDescription("DevDefault");
+
+        EmployeeDto employeeDto = modelMapper.map(employee, EmployeeDto.class);
+        APIResponseDto apiResponseDto = new APIResponseDto();
+        apiResponseDto.setEmployee(employeeDto);
+        apiResponseDto.setDepartment(departmentDto);
+        return apiResponseDto;
     }
 }
