@@ -3,17 +3,18 @@ package com.example.employeeservice.service.impl;
 import com.example.employeeservice.dto.APIResponseDto;
 import com.example.employeeservice.dto.DepartmentDto;
 import com.example.employeeservice.dto.EmployeeDto;
+import com.example.employeeservice.dto.OrganizationDto;
 import com.example.employeeservice.entity.Employee;
 import com.example.employeeservice.repository.EmployeeRepository;
 import com.example.employeeservice.service.APIClient;
 import com.example.employeeservice.service.EmployeeService;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private EmployeeRepository employeeRepository;
     private ModelMapper modelMapper;
     private APIClient apiClient;
+    private OrganizationClient organizationClient;
 
     @Override
     public EmployeeDto createEmployee(EmployeeDto employeeDto) {
@@ -36,11 +38,13 @@ public class EmployeeServiceImpl implements EmployeeService {
     public APIResponseDto getEmployeeById(long id) {
         Employee employee = employeeRepository.findById(id).get();
         DepartmentDto departmentDto = apiClient.getDepartment(employee.getDepartmentCode());
+        OrganizationDto organizationDto = organizationClient.getOrganizationByCode(employee.getOrganizationCode());
 
         EmployeeDto employeeDto = modelMapper.map(employee, EmployeeDto.class);
         APIResponseDto apiResponseDto = new APIResponseDto();
         apiResponseDto.setEmployee(employeeDto);
         apiResponseDto.setDepartment(departmentDto);
+        apiResponseDto.setOrganization(organizationDto);
         return apiResponseDto;
     }
 
@@ -60,10 +64,17 @@ public class EmployeeServiceImpl implements EmployeeService {
         departmentDto.setDepartmentCode("111");
         departmentDto.setDepartmentDescription("DevDefault");
 
+        OrganizationDto organizationDto = new OrganizationDto();
+        organizationDto.setOrganizationName("no name");
+        organizationDto.setOrganizationDescription("no description");
+        organizationDto.setOrganizationCode("no code");
+        organizationDto.setCreatedDate(LocalDateTime.now());
+
         EmployeeDto employeeDto = modelMapper.map(employee, EmployeeDto.class);
         APIResponseDto apiResponseDto = new APIResponseDto();
         apiResponseDto.setEmployee(employeeDto);
         apiResponseDto.setDepartment(departmentDto);
+        apiResponseDto.setOrganization(organizationDto);
         return apiResponseDto;
     }
 }
